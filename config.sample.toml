@@ -1,0 +1,7 @@
+[app]
+verbose = true
+
+[server]
+cidr="10.100.0.0/24"
+listen_port=54321
+private_key = "yBQWnFQEq9q9al4ratmo6ylyZ52ngNsk4U11u4JtH0U="

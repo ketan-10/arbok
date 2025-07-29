@@ -72,7 +72,7 @@ curl -H "Host: your-subdomain.localhost" http://localhost:8080
 ## Features
 
 **Simple & Secure**
-- Three-step setup with proper tunnel lifecycle management
+- Straightforward tunnel setup and management
 - WireGuard encryption with modern cryptography
 - No account needed - anonymous tunnels by default
 - Self-hosted - complete control over your infrastructure
@@ -128,7 +128,7 @@ For detailed technical internals, see [docs/internals.md](docs/internals.md).
 | No signup | ✓ | ✗ | ✗ |
 | Self-hosted | ✓ | ✗ | ✗ |
 | Modern crypto | ✓ | ✗ | ✓ |
-| Proper lifecycle | ✓ | ✓ | ✓ |
+| Open source | ✓ | ✗ | ✗ |
 
 ## Security
 

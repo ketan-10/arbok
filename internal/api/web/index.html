@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arbok 🐍 - Secure HTTP Tunnels</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="hero">
+            <div class="terminal-header">
+                <div class="terminal-buttons">
+                    <span class="btn close"></span>
+                    <span class="btn minimize"></span>
+                    <span class="btn maximize"></span>
+                </div>
+                <div class="terminal-title">tunnel.mrkaran.dev</div>
+            </div>
+            
+            <div class="hero-content">
+                <h1 class="title">
+                    <span class="snake">🐍</span>
+                    <span class="text-gradient">Arbok</span>
+                </h1>
+                <p class="subtitle">Secure HTTP tunnels to localhost using WireGuard</p>
+                <p class="description">
+                    Share your local server instantly. No signup required.
+                </p>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="quick-start">
+                <h2 class="section-title">Quick Start</h2>
+                
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Start your local server</h3>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-title">Terminal</span>
+                                <button class="copy-btn" data-copy="python3 -m http.server 3000">Copy</button>
+                            </div>
+                            <code>$ python3 -m http.server 3000</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Get your tunnel configuration</h3>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-title">Terminal</span>
+                                <button class="copy-btn" data-copy="curl https://tunnel.mrkaran.dev/3000 > tunnel.conf">Copy</button>
+                            </div>
+                            <code>$ curl https://tunnel.mrkaran.dev/3000 > tunnel.conf</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Start the tunnel</h3>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-title">Terminal</span>
+                                <button class="copy-btn" data-copy="sudo wg-quick up ./tunnel.conf">Copy</button>
+                            </div>
+                            <code>$ sudo wg-quick up ./tunnel.conf</code>
+                        </div>
+                        <div class="success-message">
+                            <span class="icon">✨</span>
+                            Your app is now live at <strong>https://random-name-1234.tunnel.mrkaran.dev</strong>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+
+        </main>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <p>
+                    <a href="https://github.com/mr-karan/arbok" target="_blank">View on GitHub</a>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

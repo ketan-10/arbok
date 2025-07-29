@@ -2,59 +2,189 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
+	"github.com/knadh/koanf"
+	"github.com/mr-karan/arbok/internal/api"
+	"github.com/mr-karan/arbok/internal/auth"
+	"github.com/mr-karan/arbok/internal/registry"
 	"github.com/mr-karan/arbok/internal/tunnel"
 )
 
 var (
-	// Version of the build. This is injected at build-time.
+	// buildString is injected at build time
 	buildString = "unknown"
 )
 
 func main() {
-	// load config.
-	ko := initConfig("config.sample.toml", "ARBOK_SERVER")
-
-	// Create a new context which is cancelled when `SIGINT`/`SIGTERM` is received.
+	// Create main context that cancels on SIGINT/SIGTERM
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
-	app := &App{
-		lo: initLogger(ko),
+	// Load configuration
+	ko := initConfig("config.sample.toml", "ARBOK_SERVER")
+	logger := initLogger(ko)
+
+	logger.Info("starting arbok server", "version", buildString)
+
+	// Parse configuration
+	cfg, err := parseConfig(ko)
+	if err != nil {
+		logger.Fatal("config error", "error", err)
 	}
-	app.lo.Info("booting arbok server", "version", buildString)
 
+	// Initialize WireGuard tunnel
 	tun, err := tunnel.New(tunnel.PeerOpts{
-		Logger:     app.lo,
-		Verbose:    ko.Bool("app.verbose"),
-		CIDR:       ko.String("server.cidr"),
-		ListenPort: ko.Int("server.listen_port"),
-		PrivateKey: ko.MustString("server.private_key"),
+		Logger:     logger,
+		Verbose:    cfg.App.Verbose,
+		CIDR:       cfg.Server.CIDR,
+		ListenPort: cfg.Server.ListenPort,
+		PrivateKey: cfg.Server.PrivateKey,
 	})
 	if err != nil {
-		app.lo.Fatal("error initialising wg tunnel", "error", err)
+		logger.Fatal("failed to initialize tunnel", "error", err)
 	}
 
-	app.tun = tun
+	// Initialize registry
+	reg, err := registry.NewRegistry(ctx, registry.Config{
+		CIDR:            cfg.Server.CIDR,
+		DefaultTTL:      cfg.Tunnel.DefaultTTL,
+		CleanupInterval: cfg.Tunnel.CleanupInterval,
+	}, logger)
+	if err != nil {
+		logger.Fatal("failed to initialize registry", "error", err)
+	}
 
+	// Initialize authenticator
+	authenticator := auth.New(cfg.Auth.APIKeys, logger)
+
+	// Initialize API server
+	apiServer := api.NewAPIServer(api.Config{
+		ListenAddr:     cfg.HTTP.ListenAddr,
+		Domain:         cfg.App.Domain,
+		WireGuardPort:  cfg.Server.ListenPort,
+		AllowedOrigins: cfg.HTTP.AllowedOrigins,
+	}, logger, tun, reg, authenticator)
+
+	// Start services
 	var wg sync.WaitGroup
-	// Start the http server in background.
+
+	// Start WireGuard tunnel
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := app.tun.Up(ctx); err != nil {
-			app.lo.Fatal("error starting wg device", "error", err)
+		if err := tun.Up(ctx); err != nil {
+			logger.Error("tunnel error", "error", err)
 		}
 	}()
 
-	// Listen on the close channel indefinitely until a
-	// `SIGINT` or `SIGTERM` is received.
+	// Start HTTP API server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := apiServer.Start(ctx); err != nil {
+			logger.Error("api server error", "error", err)
+		}
+	}()
+
+	// Wait for shutdown signal
 	<-ctx.Done()
-	// Cancel the context to gracefully shutdown and perform
-	// any cleanup tasks.
-	cancel()
-	wg.Wait()
+	logger.Info("shutting down")
+
+	// Graceful shutdown
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+
+	// Close registry (cleans up tunnels)
+	if err := reg.Close(); err != nil {
+		logger.Error("registry shutdown error", "error", err)
+	}
+
+	// Wait for goroutines to finish
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		logger.Info("shutdown complete")
+	case <-shutdownCtx.Done():
+		logger.Warn("shutdown timeout exceeded")
+	}
+}
+
+// Config represents the application configuration
+type Config struct {
+	App struct {
+		Verbose bool   `toml:"verbose"`
+		Domain  string `toml:"domain"`
+	} `toml:"app"`
+
+	Auth struct {
+		APIKeys []string `toml:"api_keys"`
+	} `toml:"auth"`
+
+	Tunnel struct {
+		DefaultTTL      time.Duration `toml:"default_ttl"`
+		CleanupInterval time.Duration `toml:"cleanup_interval"`
+	} `toml:"tunnel"`
+
+	Server struct {
+		CIDR       string `toml:"cidr"`
+		ListenPort int    `toml:"listen_port"`
+		PrivateKey string `toml:"private_key"`
+	} `toml:"server"`
+
+	HTTP struct {
+		ListenAddr     string   `toml:"listen_addr"`
+		AllowedOrigins []string `toml:"allowed_origins"`
+	} `toml:"http"`
+}
+
+// parseConfig parses and validates the configuration
+func parseConfig(ko *koanf.Koanf) (*Config, error) {
+	var cfg Config
+
+	// Set defaults
+	cfg.App.Verbose = ko.Bool("app.verbose")
+	cfg.App.Domain = ko.String("app.domain")
+	
+	cfg.Auth.APIKeys = ko.Strings("auth.api_keys")
+	
+	cfg.Tunnel.DefaultTTL = ko.Duration("tunnel.default_ttl")
+	if cfg.Tunnel.DefaultTTL == 0 {
+		cfg.Tunnel.DefaultTTL = 24 * time.Hour
+	}
+	
+	cfg.Tunnel.CleanupInterval = ko.Duration("tunnel.cleanup_interval")
+	if cfg.Tunnel.CleanupInterval == 0 {
+		cfg.Tunnel.CleanupInterval = 5 * time.Minute
+	}
+	
+	cfg.Server.CIDR = ko.String("server.cidr")
+	cfg.Server.ListenPort = ko.Int("server.listen_port")
+	cfg.Server.PrivateKey = ko.String("server.private_key")
+	
+	cfg.HTTP.ListenAddr = ko.String("http.listen_addr")
+	cfg.HTTP.AllowedOrigins = ko.Strings("http.allowed_origins")
+
+	// Validation
+	if cfg.App.Domain == "" {
+		return nil, fmt.Errorf("app.domain is required")
+	}
+	if cfg.Server.CIDR == "" {
+		return nil, fmt.Errorf("server.cidr is required")
+	}
+	if cfg.Server.PrivateKey == "" {
+		return nil, fmt.Errorf("server.private_key is required")
+	}
+
+	return &cfg, nil
 }

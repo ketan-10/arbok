@@ -29,8 +29,10 @@ type PeerOpts struct {
 }
 
 type Tunnel struct {
-	dev    *device.Device
-	logger logf.Logger
+	dev        *device.Device
+	logger     logf.Logger
+	privateKey string
+	publicKey  string
 }
 
 // New initialises a wireguard peer with the give config.
@@ -93,9 +95,17 @@ func New(opts PeerOpts) (*Tunnel, error) {
 		return nil, fmt.Errorf("error sending config to wg device: %w", err)
 	}
 
+	// Calculate public key from private key
+	pubKey, err := privateKeyToPublicKey(opts.PrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("error calculating public key: %w", err)
+	}
+
 	return &Tunnel{
-		logger: opts.Logger,
-		dev:    dev,
+		logger:     opts.Logger,
+		dev:        dev,
+		privateKey: opts.PrivateKey,
+		publicKey:  pubKey,
 	}, nil
 }
 
@@ -108,5 +118,52 @@ func (tun *Tunnel) Up(ctx context.Context) error {
 	}
 	// Whenever context is cancelled, quit.
 	<-ctx.Done()
+	return nil
+}
+
+// GetPublicKey returns the server's public key
+func (tun *Tunnel) GetPublicKey() string {
+	return tun.publicKey
+}
+
+// AddPeer adds a new peer to the WireGuard interface
+func (tun *Tunnel) AddPeer(publicKey, allowedIP string) error {
+	// Decode the public key
+	pk, err := encodeBase64ToHex(publicKey)
+	if err != nil {
+		return fmt.Errorf("error decoding public key: %w", err)
+	}
+
+	// Create peer config
+	peerConf := bytes.NewBuffer(nil)
+	fmt.Fprintf(peerConf, "public_key=%s\n", pk)
+	fmt.Fprintf(peerConf, "allowed_ip=%s/32\n", allowedIP)
+	
+	if err := tun.dev.IpcSetOperation(bufio.NewReader(peerConf)); err != nil {
+		return fmt.Errorf("error adding peer: %w", err)
+	}
+
+	tun.logger.Info("added peer", "public_key", publicKey[:8]+"...", "allowed_ip", allowedIP)
+	return nil
+}
+
+// RemovePeer removes a peer from the WireGuard interface
+func (tun *Tunnel) RemovePeer(publicKey string) error {
+	// Decode the public key
+	pk, err := encodeBase64ToHex(publicKey)
+	if err != nil {
+		return fmt.Errorf("error decoding public key: %w", err)
+	}
+
+	// Create peer removal config
+	peerConf := bytes.NewBuffer(nil)
+	fmt.Fprintf(peerConf, "public_key=%s\n", pk)
+	fmt.Fprintf(peerConf, "remove=true\n")
+	
+	if err := tun.dev.IpcSetOperation(bufio.NewReader(peerConf)); err != nil {
+		return fmt.Errorf("error removing peer: %w", err)
+	}
+
+	tun.logger.Info("removed peer", "public_key", publicKey[:8]+"...")
 	return nil
 }

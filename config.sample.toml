@@ -1,7 +1,22 @@
 [app]
 verbose = true
+domain = "localhost"
+
+[auth]
+# Leave empty for no authentication, or add API keys
+api_keys = [
+    # "your-secret-api-key-here",
+]
+
+[tunnel]
+default_ttl = "24h"
+cleanup_interval = "5m"
 
 [server]
-cidr="10.100.0.0/24"
-listen_port=54321
+cidr = "10.100.0.0/24"
+listen_port = 54321
 private_key = "yBQWnFQEq9q9al4ratmo6ylyZ52ngNsk4U11u4JtH0U="
+
+[http]
+listen_addr = ":8080"
+allowed_origins = ["*"]

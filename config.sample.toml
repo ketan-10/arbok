@@ -16,6 +16,9 @@ cleanup_interval = "5m"
 cidr = "10.100.0.0/24"
 listen_port = 54321
 private_key = "yBQWnFQEq9q9al4ratmo6ylyZ52ngNsk4U11u4JtH0U="
+# WireGuard endpoint - use direct IP or non-proxied domain
+# If not set, uses app.domain
+endpoint = "localhost:54321"
 
 [http]
 listen_addr = ":8080"

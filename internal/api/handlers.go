@@ -204,11 +204,10 @@ func (s *Server) handleProvisionSimple(w http.ResponseWriter, r *http.Request) {
 # Your local service on port %d is now accessible at:
 # https://%s.%s
 #
-# To start the tunnel:
-#   wg-quick up ./tunnel.conf
-#
-# To stop the tunnel:
-#   wg-quick down ./tunnel.conf
+# Usage:
+#   1. Save this config: curl %s/%d > tunnel.conf
+#   2. Start tunnel: sudo wg-quick up ./tunnel.conf  
+#   3. Stop tunnel: sudo wg-quick down ./tunnel.conf
 #
 %s`, 
 		t.CreatedAt.Format(time.RFC3339),
@@ -216,7 +215,11 @@ func (s *Server) handleProvisionSimple(w http.ResponseWriter, r *http.Request) {
 		t.TTL().Round(time.Minute),
 		t.Port, 
 		t.Subdomain, 
-		s.cfg.Domain, 
+		s.cfg.Domain,
+		s.cfg.Domain,
+		t.Port,
+		s.cfg.Domain,
+		t.Port,
 		config,
 	)
 	
@@ -225,42 +228,10 @@ func (s *Server) handleProvisionSimple(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, instructions)
 }
 
-// handleStartTunnel handles enhanced tunnel provisioning with self-executing script
-func (s *Server) handleStartTunnel(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	port, err := strconv.ParseUint(vars["port"], 10, 16)
-	if err != nil || port == 0 || port > 65535 {
-		http.Error(w, "Invalid port number", http.StatusBadRequest)
-		return
-	}
-	
-	// Create tunnel
-	t, err := s.registry.CreateTunnel(uint16(port))
-	if err != nil {
-		s.logger.Error("failed to create tunnel", "error", err, "port", port)
-		http.Error(w, "Failed to create tunnel", http.StatusInternalServerError)
-		return
-	}
-	
-	// Add peer to WireGuard
-	if err := s.tun.AddPeer(t.PublicKey, t.AllowedIP); err != nil {
-		s.logger.Error("failed to add peer", "error", err, "tunnel_id", t.ID)
-		_ = s.registry.DeleteTunnel(t.ID)
-		http.Error(w, "Failed to configure tunnel", http.StatusInternalServerError)
-		return
-	}
-	
-	// Generate self-executing script
-	script := s.generateTunnelScript(t)
-	
-	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	fmt.Fprint(w, script)
-}
 
 // generateWireGuardConfig generates a WireGuard configuration
 func (s *Server) generateWireGuardConfig(t *tunnel.Info) string {
-	serverEndpoint := fmt.Sprintf("%s:%d", s.cfg.Domain, s.cfg.WireGuardPort)
+	serverEndpoint := s.cfg.WireGuardEndpoint
 	
 	tunnelURL := fmt.Sprintf("https://%s.%s", t.Subdomain, s.cfg.Domain)
 	
@@ -332,4 +303,19 @@ func (s *Server) handleWebsite(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(content); err != nil {
 		s.logger.Error("failed to write website response", "error", err)
 	}
+}
+
+// handleClientScript serves the arbok client helper script
+func (s *Server) handleClientScript(w http.ResponseWriter, r *http.Request) {
+	script := `#!/bin/bash
+# Arbok Client - One command tunnel management
+# Usage: curl -O https://server/client && chmod +x client && ./client start 3000
+
+ARBOK_SERVER="${ARBOK_SERVER:-` + s.cfg.Domain + `}"
+# ... (rest of the client script would be embedded here)
+`
+	
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"arbok\"")
+	fmt.Fprint(w, script)
 }

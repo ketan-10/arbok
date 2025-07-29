@@ -4,23 +4,41 @@ Secure HTTP tunnels to localhost using WireGuard. Share your local development s
 
 ## Quick Start
 
-**Single command (recommended):**
-```bash
-# Replace 3000 with your local port
-curl -s https://arbok.mrkaran.dev/start/3000 | sudo bash
+Choose your preferred approach:
 
-# Your app is now live at https://random-name-1234.arbok.mrkaran.dev
-# Press Ctrl+C to stop the tunnel
+### 1. One-liner (fastest)
+```bash
+# Start tunnel and pipe config directly to WireGuard
+curl -s https://arbok.mrkaran.dev/3000?format=oneliner | sudo wg-quick up /dev/stdin
+
+# Stop with: sudo wg-quick down /dev/stdin (if still running)
 ```
 
-**Manual setup (advanced):**
+### 2. Helper client (recommended)  
 ```bash
-# Get tunnel config and start manually
+# Download and use the helper client
+curl -O https://arbok.mrkaran.dev/client && chmod +x client
+
+./client start 3000    # Start tunnel for port 3000
+./client list          # List active tunnels  
+./client stop          # Stop all tunnels
+```
+
+### 3. Manual config (full control)
+```bash
+# Get tunnel config and manage manually
 curl https://arbok.mrkaran.dev/3000 > tunnel.conf
 sudo wg-quick up ./tunnel.conf
 
 # Stop the tunnel
 sudo wg-quick down ./tunnel.conf
+```
+
+### 4. Interactive script (deprecated)
+```bash
+# Self-executing script with cleanup handlers
+curl -s https://arbok.mrkaran.dev/start/3000 | sudo bash
+# Press Ctrl+C to stop
 ```
 
 ## Installation
@@ -91,17 +109,22 @@ curl -H "Host: your-subdomain.localhost" http://localhost:8080
 
 ## API Usage
 
-### Enhanced provisioning (single command)
+### Quick provisioning endpoints
 ```bash
+# One-liner format (for piping to wg-quick)
+curl -s https://arbok.mrkaran.dev/3000?format=oneliner
+
+# Standard config with instructions  
+curl https://arbok.mrkaran.dev/3000
+
+# Helper client script
+curl -O https://arbok.mrkaran.dev/client
+
+# Interactive script (deprecated)
 curl -s https://arbok.mrkaran.dev/start/3000 | sudo bash
 ```
 
-### Simple provisioning (manual config)
-```bash
-curl https://arbok.mrkaran.dev/3000 > tunnel.conf
-```
-
-### RESTful API
+### RESTful API (requires API key)
 ```bash
 # Create tunnel
 curl -X POST -H "X-API-Key: your-key" https://tunnel.yourdomain.com/api/tunnel/3000

@@ -64,11 +64,18 @@ func main() {
 	authenticator := auth.New(cfg.Auth.APIKeys, logger)
 
 	// Initialize API server
+	// Use endpoint from config, or fallback to domain:port
+	endpoint := cfg.Server.Endpoint
+	if endpoint == "" {
+		endpoint = fmt.Sprintf("%s:%d", cfg.App.Domain, cfg.Server.ListenPort)
+	}
+	
 	apiServer := api.NewAPIServer(api.Config{
-		ListenAddr:     cfg.HTTP.ListenAddr,
-		Domain:         cfg.App.Domain,
-		WireGuardPort:  cfg.Server.ListenPort,
-		AllowedOrigins: cfg.HTTP.AllowedOrigins,
+		ListenAddr:       cfg.HTTP.ListenAddr,
+		Domain:           cfg.App.Domain,
+		WireGuardPort:    cfg.Server.ListenPort,
+		WireGuardEndpoint: endpoint,
+		AllowedOrigins:   cfg.HTTP.AllowedOrigins,
 	}, logger, tun, reg, authenticator)
 
 	// Start services
@@ -140,6 +147,7 @@ type Config struct {
 		CIDR       string `toml:"cidr"`
 		ListenPort int    `toml:"listen_port"`
 		PrivateKey string `toml:"private_key"`
+		Endpoint   string `toml:"endpoint"`
 	} `toml:"server"`
 
 	HTTP struct {

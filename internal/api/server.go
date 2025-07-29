@@ -33,10 +33,11 @@ type Server struct {
 
 // Config holds server configuration
 type Config struct {
-	ListenAddr      string
-	Domain          string
-	WireGuardPort   int
-	AllowedOrigins  []string
+	ListenAddr        string
+	Domain            string
+	WireGuardPort     int
+	WireGuardEndpoint string
+	AllowedOrigins    []string
 }
 
 // NewServer creates a new API server
@@ -94,6 +95,9 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/health", s.handleHealth).Methods("GET")
 	s.router.HandleFunc("/metrics", metrics.Handler()).Methods("GET")
 	
+	// Client helper script
+	s.router.HandleFunc("/client", s.handleClientScript).Methods("GET")
+	
 	// Protected API endpoints
 	api := s.router.PathPrefix("/api").Subrouter()
 	api.Use(s.auth.Middleware)
@@ -102,10 +106,8 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/tunnel/{id}", s.handleDeleteTunnel).Methods("DELETE")
 	api.HandleFunc("/tunnels", s.handleListTunnels).Methods("GET")
 	
-	// Enhanced tunnel provisioning (self-executing script)
-	s.router.HandleFunc("/start/{port:[0-9]+}", s.handleStartTunnel).Methods("GET")
 	
-	// Simple tunnel provisioning (backward compatibility)
+	// Tunnel provisioning
 	s.router.HandleFunc("/{port:[0-9]+}", s.handleProvisionSimple).Methods("GET")
 	
 	// Tunnel traffic proxy

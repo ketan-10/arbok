@@ -4,42 +4,18 @@ Secure HTTP tunnels to localhost using WireGuard. Share your local development s
 
 ## Quick Start
 
-Choose your preferred approach:
-
-### 1. One-liner (fastest)
 ```bash
-# Start tunnel and pipe config directly to WireGuard
-curl -s https://arbok.mrkaran.dev/3000?format=oneliner | sudo wg-quick up /dev/stdin
-
-# Stop with: sudo wg-quick down /dev/stdin (if still running)
-```
-
-### 2. Helper client (recommended)  
-```bash
-# Download and use the helper client
-curl -O https://arbok.mrkaran.dev/client && chmod +x client
-
-./client start 3000    # Start tunnel for port 3000
-./client list          # List active tunnels  
-./client stop          # Stop all tunnels
-```
-
-### 3. Manual config (full control)
-```bash
-# Get tunnel config and manage manually
+# 1. Get tunnel config (replace 3000 with your local port)
 curl https://arbok.mrkaran.dev/3000 > tunnel.conf
+
+# 2. Start tunnel
 sudo wg-quick up ./tunnel.conf
 
-# Stop the tunnel
+# 3. Stop tunnel when done
 sudo wg-quick down ./tunnel.conf
 ```
 
-### 4. Interactive script (deprecated)
-```bash
-# Self-executing script with cleanup handlers
-curl -s https://arbok.mrkaran.dev/start/3000 | sudo bash
-# Press Ctrl+C to stop
-```
+Your local service is now accessible at the HTTPS URL shown in the config file.
 
 ## Installation
 
@@ -96,7 +72,7 @@ curl -H "Host: your-subdomain.localhost" http://localhost:8080
 ## Features
 
 **Simple & Secure**
-- One command setup with automatic lifecycle management
+- Three-step setup with proper tunnel lifecycle management
 - WireGuard encryption with modern cryptography
 - No account needed - anonymous tunnels by default
 - Self-hosted - complete control over your infrastructure
@@ -109,19 +85,10 @@ curl -H "Host: your-subdomain.localhost" http://localhost:8080
 
 ## API Usage
 
-### Quick provisioning endpoints
+### Tunnel provisioning
 ```bash
-# One-liner format (for piping to wg-quick)
-curl -s https://arbok.mrkaran.dev/3000?format=oneliner
-
-# Standard config with instructions  
+# Get WireGuard config with instructions
 curl https://arbok.mrkaran.dev/3000
-
-# Helper client script
-curl -O https://arbok.mrkaran.dev/client
-
-# Interactive script (deprecated)
-curl -s https://arbok.mrkaran.dev/start/3000 | sudo bash
 ```
 
 ### RESTful API (requires API key)
@@ -161,7 +128,7 @@ For detailed technical internals, see [docs/internals.md](docs/internals.md).
 | No signup | ✓ | ✗ | ✗ |
 | Self-hosted | ✓ | ✗ | ✗ |
 | Modern crypto | ✓ | ✗ | ✓ |
-| Zero client install | ✓ | ✗ | ✗ |
+| Proper lifecycle | ✓ | ✓ | ✓ |
 
 ## Security
 

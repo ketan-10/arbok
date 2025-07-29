@@ -158,6 +158,10 @@ body {
 }
 
 .command-section {
+    margin-bottom: var(--space-lg);
+}
+
+.command-section:last-of-type {
     margin-bottom: var(--space-md);
 }
 

@@ -3,6 +3,7 @@ CLAUDE.md
 .claude/
 wg.conf
 config.toml
+prod/
 
 # Binaries
 bin/

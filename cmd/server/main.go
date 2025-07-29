@@ -179,6 +179,7 @@ func parseConfig(ko *koanf.Koanf) (*Config, error) {
 	cfg.Server.CIDR = ko.String("server.cidr")
 	cfg.Server.ListenPort = ko.Int("server.listen_port")
 	cfg.Server.PrivateKey = ko.String("server.private_key")
+	cfg.Server.Endpoint = ko.String("server.endpoint")
 	
 	cfg.HTTP.ListenAddr = ko.String("http.listen_addr")
 	cfg.HTTP.AllowedOrigins = ko.Strings("http.allowed_origins")

@@ -2,6 +2,8 @@
 
 Secure HTTP tunnels to localhost using WireGuard. Share your local development server instantly without signup or complex setup.
 
+**🌐 Try it now: [arbok.mrkaran.dev](https://arbok.mrkaran.dev)**
+
 ## Quick Start
 
 ```bash
@@ -94,13 +96,13 @@ curl https://arbok.mrkaran.dev/3000
 ### RESTful API (requires API key)
 ```bash
 # Create tunnel
-curl -X POST -H "X-API-Key: your-key" https://tunnel.yourdomain.com/api/tunnel/3000
+curl -X POST -H "X-API-Key: your-key" https://arbok.mrkaran.dev/api/tunnel/3000
 
 # List tunnels
-curl -H "X-API-Key: your-key" https://tunnel.yourdomain.com/api/tunnels
+curl -H "X-API-Key: your-key" https://arbok.mrkaran.dev/api/tunnels
 
 # Delete tunnel
-curl -X DELETE -H "X-API-Key: your-key" https://tunnel.yourdomain.com/api/tunnel/{id}
+curl -X DELETE -H "X-API-Key: your-key" https://arbok.mrkaran.dev/api/tunnel/{id}
 ```
 
 ## How It Works

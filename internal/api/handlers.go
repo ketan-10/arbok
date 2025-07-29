@@ -225,6 +225,39 @@ func (s *Server) handleProvisionSimple(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, instructions)
 }
 
+// handleStartTunnel handles enhanced tunnel provisioning with self-executing script
+func (s *Server) handleStartTunnel(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	port, err := strconv.ParseUint(vars["port"], 10, 16)
+	if err != nil || port == 0 || port > 65535 {
+		http.Error(w, "Invalid port number", http.StatusBadRequest)
+		return
+	}
+	
+	// Create tunnel
+	t, err := s.registry.CreateTunnel(uint16(port))
+	if err != nil {
+		s.logger.Error("failed to create tunnel", "error", err, "port", port)
+		http.Error(w, "Failed to create tunnel", http.StatusInternalServerError)
+		return
+	}
+	
+	// Add peer to WireGuard
+	if err := s.tun.AddPeer(t.PublicKey, t.AllowedIP); err != nil {
+		s.logger.Error("failed to add peer", "error", err, "tunnel_id", t.ID)
+		_ = s.registry.DeleteTunnel(t.ID)
+		http.Error(w, "Failed to configure tunnel", http.StatusInternalServerError)
+		return
+	}
+	
+	// Generate self-executing script
+	script := s.generateTunnelScript(t)
+	
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	fmt.Fprint(w, script)
+}
+
 // generateWireGuardConfig generates a WireGuard configuration
 func (s *Server) generateWireGuardConfig(t *tunnel.Info) string {
 	serverEndpoint := fmt.Sprintf("%s:%d", s.cfg.Domain, s.cfg.WireGuardPort)
@@ -260,16 +293,21 @@ func (s *Server) handleTunnelProxy(w http.ResponseWriter, r *http.Request) {
 	
 	parts := strings.Split(host, ".")
 	if len(parts) < 2 {
+		s.logger.Debug("tunnel proxy: invalid host", "host", host, "parts", len(parts))
 		writeError(w, http.StatusBadRequest, "INVALID_HOST", "Invalid host header")
 		return
 	}
 	
 	subdomain := parts[0]
+	s.logger.Debug("tunnel proxy: looking for tunnel", "host", host, "subdomain", subdomain)
 	t := s.registry.GetTunnelBySubdomain(subdomain)
 	if t == nil {
+		s.logger.Debug("tunnel proxy: tunnel not found", "subdomain", subdomain)
 		writeError(w, http.StatusNotFound, "TUNNEL_NOT_FOUND", "Tunnel not found")
 		return
 	}
+	
+	s.logger.Debug("tunnel proxy: found tunnel", "subdomain", subdomain, "tunnel_id", t.ID)
 	
 	// Update traffic stats
 	defer func() {

@@ -8,12 +8,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const textToCopy = this.getAttribute('data-copy');
             const originalText = this.textContent;
             
+            // Add loading state
+            this.textContent = 'Copying...';
+            this.classList.add('loading');
+            
             try {
                 // Use the modern Clipboard API
                 await navigator.clipboard.writeText(textToCopy);
                 
                 // Visual feedback
                 this.textContent = 'Copied!';
+                this.classList.remove('loading');
                 this.classList.add('copied');
                 
                 // Reset after 2 seconds
@@ -42,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Visual feedback
                     this.textContent = 'Copied!';
+                    this.classList.remove('loading');
                     this.classList.add('copied');
                     
                     setTimeout(() => {
@@ -51,6 +57,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                 } catch (fallbackErr) {
                     // Last resort - show alert
+                    this.textContent = 'Failed';
+                    this.classList.remove('loading');
+                    this.classList.add('error');
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                        this.classList.remove('error');
+                    }, 2000);
                     alert('Copy failed. Please copy manually: ' + textToCopy);
                 }
             }
@@ -86,60 +99,80 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add matrix-style digital rain effect to background (subtle)
-    function createMatrixRain() {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.style.position = 'fixed';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        canvas.style.pointerEvents = 'none';
-        canvas.style.zIndex = '-1';
-        canvas.style.opacity = '0.05';
-        
-        document.body.appendChild(canvas);
-        
-        const resizeCanvas = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-        
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-        
-        const columns = Math.floor(canvas.width / 20);
-        const drops = new Array(columns).fill(1);
-        
-        const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン';
-        
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(13, 17, 23, 0.05)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.fillStyle = '#00ff41';
-            ctx.font = '12px monospace';
-            
-            for (let i = 0; i < drops.length; i++) {
-                const text = chars[Math.floor(Math.random() * chars.length)];
-                ctx.fillText(text, i * 20, drops[i] * 20);
-                
-                if (drops[i] * 20 > canvas.height && Math.random() > 0.975) {
-                    drops[i] = 0;
-                }
-                drops[i]++;
+    // Add enhanced styling
+    function addEnhancedStyling() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .copy-btn.loading {
+                opacity: 0.7;
+                cursor: wait;
             }
-        }
-        
-        setInterval(drawMatrix, 100);
+            .copy-btn.error {
+                background: #ff4444;
+                color: white;
+            }
+            kbd {
+                background: var(--bg-tertiary);
+                border: 1px solid var(--border-primary);
+                border-radius: 3px;
+                padding: 2px 6px;
+                font-family: var(--font-mono);
+                font-size: 0.8em;
+            }
+            .note {
+                margin-top: 10px;
+                padding: 8px 12px;
+                background: var(--bg-tertiary);
+                border-left: 3px solid var(--accent-cyan);
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text-secondary);
+            }
+            .success-message small {
+                opacity: 0.8;
+                font-size: 0.9em;
+            }
+            .routing-note {
+                margin-top: 10px;
+                opacity: 0.7;
+                text-align: center;
+            }
+            .routing-note code, .ui-note code {
+                background: var(--bg-tertiary);
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-family: var(--font-mono);
+                font-size: 0.85em;
+                color: var(--accent-green);
+            }
+            .ui-note {
+                opacity: 0.7;
+                font-size: 0.9em;
+            }
+        `;
+        document.head.appendChild(style);
     }
     
-    // Only add matrix effect on larger screens to avoid performance issues
-    if (window.innerWidth > 768) {
-        createMatrixRain();
+    // Add keyboard shortcuts
+    function addKeyboardShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + K to focus on first copy button
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                const firstCopyBtn = document.querySelector('.copy-btn');
+                if (firstCopyBtn) {
+                    firstCopyBtn.click();
+                }
+            }
+        });
+        
     }
+    
+    // Initialize features
+    addEnhancedStyling();
+    addKeyboardShortcuts();
     
     // Add typing effect to terminal title
     const terminalTitle = document.querySelector('.terminal-title');

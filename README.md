@@ -4,21 +4,22 @@ Secure HTTP tunnels to localhost using WireGuard. Share your local development s
 
 ## Quick Start
 
+**Single command (recommended):**
 ```bash
-# Start your local server
-python3 -m http.server 3000
+# Replace 3000 with your local port
+curl -s https://arbok.mrkaran.dev/start/3000 | sudo bash
 
-# Get tunnel config
-curl https://tunnel.mrkaran.dev/3000 > tunnel.conf
-
-# Start tunnel
-sudo wg-quick up ./tunnel.conf
-
-# Your app is now live at https://random-name-1234.tunnel.mrkaran.dev
+# Your app is now live at https://random-name-1234.arbok.mrkaran.dev
+# Press Ctrl+C to stop the tunnel
 ```
 
-Stop the tunnel:
+**Manual setup (advanced):**
 ```bash
+# Get tunnel config and start manually
+curl https://arbok.mrkaran.dev/3000 > tunnel.conf
+sudo wg-quick up ./tunnel.conf
+
+# Stop the tunnel
 sudo wg-quick down ./tunnel.conf
 ```
 
@@ -34,7 +35,7 @@ make build
 2. **Configure** (copy `config.sample.toml` to `config.toml`):
 ```toml
 [app]
-domain = "tunnel.yourdomain.com"
+domain = "arbok.yourdomain.com"
 
 [auth]
 # Optional: Add API keys for authentication
@@ -77,7 +78,7 @@ curl -H "Host: your-subdomain.localhost" http://localhost:8080
 ## Features
 
 **Simple & Secure**
-- One command setup - just `curl` to get started
+- One command setup with automatic lifecycle management
 - WireGuard encryption with modern cryptography
 - No account needed - anonymous tunnels by default
 - Self-hosted - complete control over your infrastructure
@@ -90,9 +91,14 @@ curl -H "Host: your-subdomain.localhost" http://localhost:8080
 
 ## API Usage
 
-### Simple provisioning
+### Enhanced provisioning (single command)
 ```bash
-curl https://tunnel.yourdomain.com/3000 > tunnel.conf
+curl -s https://arbok.mrkaran.dev/start/3000 | sudo bash
+```
+
+### Simple provisioning (manual config)
+```bash
+curl https://arbok.mrkaran.dev/3000 > tunnel.conf
 ```
 
 ### RESTful API

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -61,13 +62,32 @@ func (s *Server) setupRoutes() {
 		middleware.CORS(s.cfg.AllowedOrigins),
 	)
 	
-	// Static website
+	// Static website at /ui
 	webFS, err := fs.Sub(webFiles, "web")
 	if err != nil {
 		s.logger.Error("failed to create web filesystem", "error", err)
 	} else {
 		s.router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.FS(webFS))))
-		s.router.HandleFunc("/", s.handleWebsite).Methods("GET")
+		s.router.HandleFunc("/ui", s.handleWebsite).Methods("GET")
+		// Redirect root to /ui for convenience
+		s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			// Only redirect if this is not a tunnel subdomain
+			host := r.Host
+			if idx := strings.Index(host, ":"); idx != -1 {
+				host = host[:idx]
+			}
+			parts := strings.Split(host, ".")
+			if len(parts) >= 2 {
+				subdomain := parts[0]
+				if t := s.registry.GetTunnelBySubdomain(subdomain); t != nil {
+					// This is a tunnel request, pass to proxy
+					s.handleTunnelProxy(w, r)
+					return
+				}
+			}
+			// Regular root request, redirect to UI
+			http.Redirect(w, r, "/ui", http.StatusFound)
+		}).Methods("GET")
 	}
 	
 	// Health and metrics endpoints
@@ -82,7 +102,10 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/tunnel/{id}", s.handleDeleteTunnel).Methods("DELETE")
 	api.HandleFunc("/tunnels", s.handleListTunnels).Methods("GET")
 	
-	// Simple tunnel provisioning
+	// Enhanced tunnel provisioning (self-executing script)
+	s.router.HandleFunc("/start/{port:[0-9]+}", s.handleStartTunnel).Methods("GET")
+	
+	// Simple tunnel provisioning (backward compatibility)
 	s.router.HandleFunc("/{port:[0-9]+}", s.handleProvisionSimple).Methods("GET")
 	
 	// Tunnel traffic proxy

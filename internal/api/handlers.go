@@ -218,8 +218,6 @@ func (s *Server) handleProvisionSimple(w http.ResponseWriter, r *http.Request) {
 		s.cfg.Domain,
 		s.cfg.Domain,
 		t.Port,
-		s.cfg.Domain,
-		t.Port,
 		config,
 	)
 	

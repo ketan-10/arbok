@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"time"
 	
 	"golang.org/x/crypto/curve25519"
 )
@@ -61,7 +62,13 @@ func (g *FriendlyNameGenerator) Generate() string {
 	
 	// Generate random indices
 	var buf [3]byte
-	rand.Read(buf[:])
+	if _, err := rand.Read(buf[:]); err != nil {
+		// Fallback to time-based randomness if crypto/rand fails
+		now := time.Now().UnixNano()
+		buf[0] = byte(now)
+		buf[1] = byte(now >> 8)
+		buf[2] = byte(now >> 16)
+	}
 	
 	adj := adjectives[int(buf[0])%len(adjectives)]
 	noun := nouns[int(buf[1])%len(nouns)]

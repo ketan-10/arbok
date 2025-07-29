@@ -32,7 +32,6 @@ type Registry struct {
 	keyGen   KeyGenerator
 	nameGen  NameGenerator
 	
-	cleanupTimer *time.Timer
 	ctx          context.Context
 	cancel       context.CancelFunc
 }
@@ -82,7 +81,9 @@ func (r *Registry) CreateTunnel(port uint16) (*tunnel.Info, error) {
 	// Generate keys
 	privateKey, publicKey, err := r.keyGen.Generate()
 	if err != nil {
-		r.ipPool.Release(ip)
+		if releaseErr := r.ipPool.Release(ip); releaseErr != nil {
+			r.logger.Error("failed to release IP after key generation error", "error", releaseErr, "ip", ip)
+		}
 		return nil, fmt.Errorf("failed to generate keys: %w", err)
 	}
 	
@@ -238,7 +239,9 @@ func (r *Registry) Close() error {
 	
 	// Clean up all tunnels
 	for _, t := range r.tunnels {
-		r.deleteTunnelLocked(t)
+		if err := r.deleteTunnelLocked(t); err != nil {
+			r.logger.Error("failed to cleanup tunnel", "error", err, "id", t.ID)
+		}
 	}
 	
 	return nil

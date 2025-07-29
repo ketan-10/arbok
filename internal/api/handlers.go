@@ -291,5 +291,7 @@ func (s *Server) handleWebsite(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(content)
+	if _, err := w.Write(content); err != nil {
+		s.logger.Error("failed to write website response", "error", err)
+	}
 }

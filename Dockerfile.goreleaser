@@ -1,0 +1,22 @@
+FROM alpine:latest
+
+# Install required packages for WireGuard
+RUN apk add --no-cache \
+    ca-certificates \
+    wireguard-tools \
+    iptables
+
+WORKDIR /app
+
+# Copy the pre-built binary from GoReleaser
+COPY arbok ./arbok
+
+# Copy sample config
+COPY config.sample.toml ./config.toml
+
+RUN chmod +x ./arbok
+
+EXPOSE 8080
+EXPOSE 54321/udp
+
+CMD ["./arbok", "--config", "config.toml"]

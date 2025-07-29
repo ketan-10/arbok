@@ -3,6 +3,7 @@ CLAUDE.md
 .claude/
 tunnel.conf
 config.toml
+dist/*
 
 # Binaries
 bin/
@@ -14,6 +15,9 @@ bin/
 *.dylib
 *.test
 *.out
+
+# GoReleaser
+dist/
 
 # Go
 go.work

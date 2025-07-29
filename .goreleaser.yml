@@ -68,7 +68,7 @@ dockers:
   - image_templates:
       - "ghcr.io/mr-karan/arbok:{{ .Version }}"
       - "ghcr.io/mr-karan/arbok:latest"
-    dockerfile: Dockerfile
+    dockerfile: Dockerfile.goreleaser
     build_flag_templates:
       - --platform=linux/amd64
       - --label=org.opencontainers.image.title={{ .ProjectName }}

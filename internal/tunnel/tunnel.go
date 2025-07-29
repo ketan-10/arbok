@@ -87,6 +87,17 @@ func New(opts PeerOpts) (*Tunnel, error) {
 		return nil, fmt.Errorf("error bringing up the link: %w", err)
 	}
 
+	// Add route for the entire CIDR range through this interface.
+	// This is needed for userspace WireGuard since kernel doesn't automatically
+	// add routes like it does for kernel WireGuard.
+	route := &netlink.Route{
+		Dst:       cidrNet,              // 10.100.0.0/24
+		LinkIndex: link.Attrs().Index,   // wg0 interface
+	}
+	if err = netlink.RouteAdd(route); err != nil {
+		return nil, fmt.Errorf("error adding route for CIDR %s: %w", opts.CIDR, err)
+	}
+
 	// Decode the private key.
 	pk, err := encodeBase64ToHex(opts.PrivateKey)
 	if err != nil {

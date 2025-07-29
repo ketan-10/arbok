@@ -205,9 +205,9 @@ func (s *Server) handleProvisionSimple(w http.ResponseWriter, r *http.Request) {
 # https://%s.%s
 #
 # Usage:
-#   1. Save this config: curl %s/%d > tunnel.conf
-#   2. Start tunnel: sudo wg-quick up ./tunnel.conf  
-#   3. Stop tunnel: sudo wg-quick down ./tunnel.conf
+#   1. Save this config: curl %s/%d > wg.conf
+#   2. Start tunnel: sudo wg-quick up ./wg.conf  
+#   3. Stop tunnel: sudo wg-quick down ./wg.conf
 #
 %s`, 
 		t.CreatedAt.Format(time.RFC3339),

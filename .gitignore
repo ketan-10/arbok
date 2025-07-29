@@ -3,7 +3,6 @@ CLAUDE.md
 .claude/
 tunnel.conf
 config.toml
-dist/*
 
 # Binaries
 bin/

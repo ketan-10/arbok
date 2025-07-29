@@ -54,15 +54,14 @@ func NewAPIServer(cfg Config, logger logf.Logger, tun *tunnel.Tunnel, reg *regis
 }
 
 func (s *Server) setupRoutes() {
-	// Apply global middleware
+	// Global middleware for all routes
 	s.router.Use(
 		middleware.Recovery(s.logger),
 		middleware.Logger(s.logger),
 		middleware.CORS(s.cfg.AllowedOrigins),
-		s.auth.Middleware,
 	)
 	
-	// Static website files
+	// Static website
 	webFS, err := fs.Sub(webFiles, "web")
 	if err != nil {
 		s.logger.Error("failed to create web filesystem", "error", err)
@@ -71,21 +70,22 @@ func (s *Server) setupRoutes() {
 		s.router.HandleFunc("/", s.handleWebsite).Methods("GET")
 	}
 	
-	// Public endpoints
+	// Health and metrics endpoints
 	s.router.HandleFunc("/health", s.handleHealth).Methods("GET")
 	s.router.HandleFunc("/metrics", metrics.Handler()).Methods("GET")
 	
-	// API endpoints
+	// Protected API endpoints
 	api := s.router.PathPrefix("/api").Subrouter()
+	api.Use(s.auth.Middleware)
 	api.HandleFunc("/tunnel/{port:[0-9]+}", s.handleCreateTunnel).Methods("POST")
 	api.HandleFunc("/tunnel/{id}", s.handleGetTunnel).Methods("GET")
 	api.HandleFunc("/tunnel/{id}", s.handleDeleteTunnel).Methods("DELETE")
 	api.HandleFunc("/tunnels", s.handleListTunnels).Methods("GET")
 	
-	// Simple provisioning endpoint (curl-friendly)
+	// Simple tunnel provisioning
 	s.router.HandleFunc("/{port:[0-9]+}", s.handleProvisionSimple).Methods("GET")
 	
-	// Wildcard routing for tunnel traffic
+	// Tunnel traffic proxy
 	s.router.PathPrefix("/").HandlerFunc(s.handleTunnelProxy)
 }
 

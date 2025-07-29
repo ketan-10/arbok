@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
 
 	"github.com/vishvananda/netlink"
 	"github.com/zerodha/logf"
@@ -58,15 +59,27 @@ func New(opts PeerOpts) (*Tunnel, error) {
 		return nil, fmt.Errorf("error while getting link: %w", err)
 	}
 
-	// Parse the CIDR.
-	addr, err := netlink.ParseAddr(opts.CIDR)
+	// Parse the CIDR to get the network range.
+	_, cidrNet, err := net.ParseCIDR(opts.CIDR)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing ip address: %w", err)
+		return nil, fmt.Errorf("error parsing CIDR: %w", err)
 	}
 
-	// Add the address to the interface.
+	// Calculate the first usable IP in the range (network + 1).
+	serverIP := make(net.IP, len(cidrNet.IP))
+	copy(serverIP, cidrNet.IP)
+	serverIP[len(serverIP)-1] += 1 // Increment last octet to get .1
+
+	// Create server address with /32 (single host).
+	serverAddr := fmt.Sprintf("%s/32", serverIP.String())
+	addr, err := netlink.ParseAddr(serverAddr)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing server address: %w", err)
+	}
+
+	// Add the server address to the interface.
 	if err = netlink.AddrAdd(link, addr); err != nil {
-		return nil, fmt.Errorf("error assigning ip address: %w", err)
+		return nil, fmt.Errorf("error assigning server address: %w", err)
 	}
 
 	// Start the interface.

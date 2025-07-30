@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"github.com/mr-karan/arbok/internal/middleware"
 	"github.com/mr-karan/arbok/internal/registry"
 	"github.com/mr-karan/arbok/internal/tunnel"
-	"github.com/zerodha/logf"
 )
 
 //go:embed web/*
@@ -24,7 +24,7 @@ var webFiles embed.FS
 // Server handles HTTP API requests
 type Server struct {
 	cfg      Config
-	logger   logf.Logger
+	logger   *slog.Logger
 	tun      *tunnel.Tunnel
 	registry *registry.Registry
 	auth     *auth.Authenticator
@@ -41,7 +41,7 @@ type Config struct {
 }
 
 // NewServer creates a new API server
-func NewAPIServer(cfg Config, logger logf.Logger, tun *tunnel.Tunnel, reg *registry.Registry, auth *auth.Authenticator) *Server {
+func NewAPIServer(cfg Config, logger *slog.Logger, tun *tunnel.Tunnel, reg *registry.Registry, auth *auth.Authenticator) *Server {
 	s := &Server{
 		cfg:      cfg,
 		logger:   logger,
@@ -66,7 +66,7 @@ func (s *Server) setupRoutes() {
 	// Static website at /ui
 	webFS, err := fs.Sub(webFiles, "web")
 	if err != nil {
-		s.logger.Error("failed to create web filesystem", "error", err)
+		s.logger.Error("failed to create web filesystem", slog.Any("error", err))
 	} else {
 		s.router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.FS(webFS))))
 		s.router.HandleFunc("/ui", s.handleWebsite).Methods("GET")
@@ -132,11 +132,11 @@ func (s *Server) Start(ctx context.Context) error {
 		
 		s.logger.Info("shutting down http server")
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			s.logger.Error("http server shutdown error", "error", err)
+			s.logger.Error("http server shutdown error", slog.Any("error", err))
 		}
 	}()
 	
-	s.logger.Info("starting http server", "addr", s.cfg.ListenAddr)
+	s.logger.Info("starting http server", slog.String("addr", s.cfg.ListenAddr))
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("http server error: %w", err)
 	}

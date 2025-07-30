@@ -1,15 +1,15 @@
 package middleware
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 	
 	"github.com/mr-karan/arbok/internal/metrics"
-	"github.com/zerodha/logf"
 )
 
 // Logger logs HTTP requests
-func Logger(logger logf.Logger) func(http.Handler) http.Handler {
+func Logger(logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -22,11 +22,11 @@ func Logger(logger logf.Logger) func(http.Handler) http.Handler {
 			duration := time.Since(start)
 			
 			logger.Info("http request",
-				"method", r.Method,
-				"path", r.URL.Path,
-				"status", lrw.statusCode,
-				"duration", duration,
-				"remote", r.RemoteAddr,
+				slog.String("method", r.Method),
+				slog.String("path", r.URL.Path),
+				slog.Int("status", lrw.statusCode),
+				slog.Duration("duration", duration),
+				slog.String("remote", r.RemoteAddr),
 			)
 			
 			// Record metrics
@@ -36,15 +36,15 @@ func Logger(logger logf.Logger) func(http.Handler) http.Handler {
 }
 
 // Recovery recovers from panics
-func Recovery(logger logf.Logger) func(http.Handler) http.Handler {
+func Recovery(logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if err := recover(); err != nil {
 					logger.Error("panic recovered",
-						"error", err,
-						"method", r.Method,
-						"path", r.URL.Path,
+						slog.Any("error", err),
+						slog.String("method", r.Method),
+						slog.String("path", r.URL.Path),
 					)
 					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				}

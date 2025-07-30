@@ -3,13 +3,13 @@ package registry
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/mr-karan/arbok/internal/metrics"
 	"github.com/mr-karan/arbok/internal/tunnel"
-	"github.com/zerodha/logf"
 )
 
 // Config holds registry configuration
@@ -22,7 +22,7 @@ type Config struct {
 // Registry manages active tunnels
 type Registry struct {
 	cfg    Config
-	logger logf.Logger
+	logger *slog.Logger
 	
 	mu          sync.RWMutex
 	tunnels     map[string]*tunnel.Info
@@ -37,7 +37,7 @@ type Registry struct {
 }
 
 // New creates a new registry
-func NewRegistry(ctx context.Context, cfg Config, logger logf.Logger) (*Registry, error) {
+func NewRegistry(ctx context.Context, cfg Config, logger *slog.Logger) (*Registry, error) {
 	pool, err := NewIPPool(cfg.CIDR)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create IP pool: %w", err)
@@ -82,7 +82,8 @@ func (r *Registry) CreateTunnel(port uint16) (*tunnel.Info, error) {
 	privateKey, publicKey, err := r.keyGen.Generate()
 	if err != nil {
 		if releaseErr := r.ipPool.Release(ip); releaseErr != nil {
-			r.logger.Error("failed to release IP after key generation error", "error", releaseErr, "ip", ip)
+			r.logger.Error("failed to release IP after key generation error", 
+				slog.Any("error", releaseErr), slog.String("ip", ip.String()))
 		}
 		return nil, fmt.Errorf("failed to generate keys: %w", err)
 	}
@@ -112,10 +113,10 @@ func (r *Registry) CreateTunnel(port uint16) (*tunnel.Info, error) {
 	metrics.IPPoolAvailable.Set(float64(r.ipPool.Available()))
 	
 	r.logger.Info("tunnel created", 
-		"id", t.ID, 
-		"subdomain", t.Subdomain,
-		"ip", t.AllowedIP,
-		"ttl", r.cfg.DefaultTTL)
+		slog.String("id", t.ID), 
+		slog.String("subdomain", t.Subdomain),
+		slog.String("ip", t.AllowedIP),
+		slog.Duration("ttl", r.cfg.DefaultTTL))
 	
 	return t, nil
 }
@@ -161,7 +162,8 @@ func (r *Registry) DeleteTunnel(id string) error {
 func (r *Registry) deleteTunnelLocked(t *tunnel.Info) error {
 	// Release IP
 	if err := r.ipPool.ReleaseString(t.AllowedIP); err != nil {
-		r.logger.Error("failed to release IP", "error", err, "ip", t.AllowedIP)
+		r.logger.Error("failed to release IP", 
+			slog.Any("error", err), slog.String("ip", t.AllowedIP))
 	}
 	
 	delete(r.tunnels, t.ID)
@@ -172,7 +174,8 @@ func (r *Registry) deleteTunnelLocked(t *tunnel.Info) error {
 	metrics.TunnelsDeleted.Inc()
 	metrics.IPPoolAvailable.Set(float64(r.ipPool.Available()))
 	
-	r.logger.Info("tunnel deleted", "id", t.ID, "subdomain", t.Subdomain)
+	r.logger.Info("tunnel deleted", 
+		slog.String("id", t.ID), slog.String("subdomain", t.Subdomain))
 	
 	return nil
 }
@@ -219,14 +222,15 @@ func (r *Registry) cleanupExpired() {
 	
 	for _, t := range expired {
 		if err := r.deleteTunnelLocked(t); err != nil {
-			r.logger.Error("failed to delete expired tunnel", "error", err, "id", t.ID)
+			r.logger.Error("failed to delete expired tunnel", 
+				slog.Any("error", err), slog.String("id", t.ID))
 		} else {
 			metrics.TunnelsExpired.Inc()
 		}
 	}
 	
 	if len(expired) > 0 {
-		r.logger.Info("cleaned up expired tunnels", "count", len(expired))
+		r.logger.Info("cleaned up expired tunnels", slog.Int("count", len(expired)))
 	}
 }
 
@@ -240,7 +244,8 @@ func (r *Registry) Close() error {
 	// Clean up all tunnels
 	for _, t := range r.tunnels {
 		if err := r.deleteTunnelLocked(t); err != nil {
-			r.logger.Error("failed to cleanup tunnel", "error", err, "id", t.ID)
+			r.logger.Error("failed to cleanup tunnel", 
+				slog.Any("error", err), slog.String("id", t.ID))
 		}
 	}
 	

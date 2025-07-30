@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
-
-	"github.com/zerodha/logf"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/toml"
@@ -14,13 +13,37 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-// initLogger initializes logger instance.
-func initLogger(ko *koanf.Koanf) logf.Logger {
-	opts := logf.Opts{EnableColor: true, EnableCaller: true}
-	if ko.String("app.log_level") == "debug" {
-		opts.Level = logf.DebugLevel
+// initLogger initializes slog logger instance.
+func initLogger(ko *koanf.Koanf) *slog.Logger {
+	// Parse log level from config
+	var level slog.Level
+	switch strings.ToLower(ko.String("app.log_level")) {
+	case "debug":
+		level = slog.LevelDebug
+	case "info":
+		level = slog.LevelInfo
+	case "warn", "warning":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
 	}
-	return logf.New(opts)
+
+	// Configure handler options
+	opts := &slog.HandlerOptions{
+		Level:     level,
+		AddSource: true, // Enable caller information
+	}
+
+	// Create text handler for console output
+	handler := slog.NewTextHandler(os.Stdout, opts)
+	logger := slog.New(handler)
+
+	// Set as default logger
+	slog.SetDefault(logger)
+
+	return logger
 }
 
 // initConfig loads config to `ko` object.

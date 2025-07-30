@@ -131,7 +131,7 @@ func (s *Server) handleDeleteTunnel(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Remove peer from WireGuard
-	if err := s.tun.RemovePeer(t.PublicKey); err != nil {
+	if err := s.tun.RemovePeer(t.PublicKey, t.AllowedIP); err != nil {
 		s.logger.Error("failed to remove peer", "error", err, "tunnel_id", t.ID)
 	}
 	
@@ -240,7 +240,7 @@ PostUp = echo "🐍 Arbok tunnel active! Local port %d → %s"
 
 [Peer]
 PublicKey = %s
-AllowedIPs = 10.100.0.1/32
+AllowedIPs = 10.100.0.0/24
 Endpoint = %s
 PersistentKeepalive = 25`, 
 		t.AllowedIP,

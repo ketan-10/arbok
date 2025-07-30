@@ -2,6 +2,7 @@ package api
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -12,7 +13,7 @@ import (
 	"time"
 )
 
-// createReverseProxy creates a reverse proxy for a tunnel
+// createReverseProxy creates a reverse proxy for a tunnel using netstack
 func (s *Server) createReverseProxy(targetIP string, port uint16) *httputil.ReverseProxy {
 	target := &url.URL{
 		Scheme: "http",
@@ -21,13 +22,12 @@ func (s *Server) createReverseProxy(targetIP string, port uint16) *httputil.Reve
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	
-	// Customize the transport for better performance
+	// Get netstack from tunnel for userspace networking
+	tnet := s.tun.GetNetstack()
+	
+	// Customize the transport to use netstack (userspace WireGuard networking)
 	proxy.Transport = &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
+		DialContext:           tnet.DialContext, // Use netstack instead of kernel networking
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,
@@ -75,21 +75,29 @@ func (s *Server) createReverseProxy(targetIP string, port uint16) *httputil.Reve
 	return proxy
 }
 
-// handleTunnelTrafficWithProxy handles incoming traffic and proxies it to the tunnel
-func (s *Server) handleTunnelTrafficWithProxy(w http.ResponseWriter, r *http.Request) {
-	// Extract subdomain from host
-	host := r.Host
-	if idx := strings.Index(host, ":"); idx != -1 {
+// extractSubdomain extracts the subdomain from a host header value.
+// It handles port stripping and returns just the subdomain portion.
+func extractSubdomain(host string) string {
+	// Remove port if present
+	if idx := strings.IndexByte(host, ':'); idx != -1 {
 		host = host[:idx]
 	}
 	
-	parts := strings.Split(host, ".")
-	if len(parts) < 2 {
-		http.Error(w, "Invalid host", http.StatusBadRequest)
+	// Extract subdomain (first part before first dot)
+	if idx := strings.IndexByte(host, '.'); idx != -1 {
+		return host[:idx]
+	}
+	return host
+}
+
+// handleTunnelTrafficWithProxy handles incoming traffic and proxies it to the tunnel
+func (s *Server) handleTunnelTrafficWithProxy(w http.ResponseWriter, r *http.Request) {
+	// Extract subdomain from host
+	subdomain := extractSubdomain(r.Host)
+	if subdomain == "" {
+		http.Error(w, "Invalid host header", http.StatusBadRequest)
 		return
 	}
-	
-	subdomain := parts[0]
 	tunnel := s.registry.GetTunnelBySubdomain(subdomain)
 	if tunnel == nil {
 		http.Error(w, "Tunnel not found", http.StatusNotFound)
@@ -121,7 +129,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request, targetI
 		targetURL += "?" + r.URL.RawQuery
 	}
 
-	targetConn, resp, err := websocketDial(targetURL, r.Header)
+	targetConn, resp, err := s.websocketDial(targetURL, r.Header)
 	if err != nil {
 		s.logger.Error("websocket dial error", "error", err, "target", targetURL)
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
@@ -150,31 +158,47 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request, targetI
 		return
 	}
 
-	// Proxy data between connections
+	// Use context for proper cancellation
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	// Proxy data between connections with proper cleanup
 	errc := make(chan error, 2)
 	go func() {
+		defer cancel() // Cancel context when one direction completes
 		_, err := io.Copy(targetConn, clientConn)
 		errc <- err
 	}()
 	go func() {
+		defer cancel() // Cancel context when one direction completes
 		_, err := io.Copy(clientConn, targetConn)
 		errc <- err
 	}()
 
-	// Wait for either copy to complete
-	<-errc
+	// Wait for either copy to complete or context cancellation
+	select {
+	case <-ctx.Done():
+		return
+	case <-errc:
+		return
+	}
 }
 
-// websocketDial dials a WebSocket connection
-func websocketDial(targetURL string, headers http.Header) (net.Conn, *http.Response, error) {
+// websocketDial dials a WebSocket connection using the tunnel's netstack
+func (s *Server) websocketDial(targetURL string, headers http.Header) (net.Conn, *http.Response, error) {
 	// Parse the URL
 	u, err := url.Parse(targetURL)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Dial TCP connection
-	conn, err := net.DialTimeout("tcp", u.Host, 10*time.Second)
+	// Get netstack from tunnel for userspace networking
+	tnet := s.tun.GetNetstack()
+	
+	// Dial TCP connection using netstack (userspace WireGuard networking)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	conn, err := tnet.DialContext(ctx, "tcp", u.Host)
 	if err != nil {
 		return nil, nil, err
 	}

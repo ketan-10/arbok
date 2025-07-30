@@ -3,11 +3,11 @@ package auth
 import (
 	"context"
 	"crypto/subtle"
+	"log/slog"
 	"net/http"
 	"strings"
 	
 	"github.com/mr-karan/arbok/internal/metrics"
-	"github.com/zerodha/logf"
 )
 
 // contextKey is a custom type for context keys
@@ -27,11 +27,11 @@ const (
 // Authenticator handles API authentication
 type Authenticator struct {
 	keys   map[string]bool
-	logger logf.Logger
+	logger *slog.Logger
 }
 
 // New creates a new authenticator
-func New(apiKeys []string, logger logf.Logger) *Authenticator {
+func New(apiKeys []string, logger *slog.Logger) *Authenticator {
 	keys := make(map[string]bool, len(apiKeys))
 	for _, key := range apiKeys {
 		if key != "" {
@@ -69,7 +69,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 		
 		if !a.isValidKey(apiKey) {
 			metrics.AuthFailures.Inc()
-			a.logger.Warn("invalid API key attempt", "ip", r.RemoteAddr)
+			a.logger.Warn("invalid API key attempt", slog.String("ip", r.RemoteAddr))
 			http.Error(w, "Invalid API key", http.StatusUnauthorized)
 			return
 		}

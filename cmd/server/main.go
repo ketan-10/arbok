@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"sync"
@@ -30,12 +31,13 @@ func main() {
 	ko := initConfig("config.sample.toml", "ARBOK_SERVER")
 	logger := initLogger(ko)
 
-	logger.Info("starting arbok server", "version", buildString)
+	logger.Info("starting arbok server", slog.String("version", buildString))
 
 	// Parse configuration
 	cfg, err := parseConfig(ko)
 	if err != nil {
-		logger.Fatal("config error", "error", err)
+		logger.Error("config error", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	// Initialize WireGuard tunnel
@@ -47,7 +49,8 @@ func main() {
 		PrivateKey: cfg.Server.PrivateKey,
 	})
 	if err != nil {
-		logger.Fatal("failed to initialize tunnel", "error", err)
+		logger.Error("failed to initialize tunnel", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	// Initialize registry
@@ -57,7 +60,8 @@ func main() {
 		CleanupInterval: cfg.Tunnel.CleanupInterval,
 	}, logger)
 	if err != nil {
-		logger.Fatal("failed to initialize registry", "error", err)
+		logger.Error("failed to initialize registry", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	// Initialize authenticator
@@ -86,7 +90,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err := tun.Up(ctx); err != nil {
-			logger.Error("tunnel error", "error", err)
+			logger.Error("tunnel error", slog.Any("error", err))
 		}
 	}()
 

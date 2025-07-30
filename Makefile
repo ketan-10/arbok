@@ -18,4 +18,4 @@ fresh: build run
 
 .PHONY: lint
 lint:
-	docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.43.0 golangci-lint run -v
+	docker run --rm -v $(PWD):/app -w /app golangci/golangci-lint:v1.43.0 golangci-lint run -v

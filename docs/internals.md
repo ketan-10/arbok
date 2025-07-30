@@ -22,7 +22,7 @@ This document provides a deep technical dive into how Arbok implements secure HT
 ### 1. Tunnel Provisioning
 
 ```bash
-curl https://tunnel.domain.com/3000 > tunnel.conf
+curl https://tunnel.domain.com/3000 > burrow.conf
 ```
 
 **Process:**
@@ -50,7 +50,7 @@ curve25519.ScalarBaseMult(&pub, &priv)
 ### 2. WireGuard Connection Establishment
 
 ```bash
-wg-quick up ./tunnel.conf
+wg-quick up ./burrow.conf
 ```
 
 **Network Setup:**

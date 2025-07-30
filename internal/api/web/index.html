@@ -37,8 +37,8 @@
                 <div class="command-section">
                     <div class="command-label">Start tunnel:</div>
                     <div class="command-block">
-                        <code class="command-text">curl https://arbok.mrkaran.dev/3000 > wg.conf && sudo wg-quick up ./wg.conf</code>
-                        <button class="copy-button" data-copy="curl https://arbok.mrkaran.dev/3000 > wg.conf && sudo wg-quick up ./wg.conf">
+                        <code class="command-text">curl https://arbok.mrkaran.dev/3000 > burrow.conf && sudo wg-quick up ./burrow.conf</code>
+                        <button class="copy-button" data-copy="curl https://arbok.mrkaran.dev/3000 > burrow.conf && sudo wg-quick up ./burrow.conf">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                 <path d="m5 15-4-4 4-4"></path>
@@ -55,8 +55,8 @@
                 <div class="command-section">
                     <div class="command-label">Stop tunnel:</div>
                     <div class="command-block">
-                        <code class="command-text">sudo wg-quick down ./wg.conf</code>
-                        <button class="copy-button" data-copy="sudo wg-quick down ./wg.conf">
+                        <code class="command-text">sudo wg-quick down ./burrow.conf</code>
+                        <button class="copy-button" data-copy="sudo wg-quick down ./burrow.conf">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                 <path d="m5 15-4-4 4-4"></path>
@@ -139,6 +139,49 @@
                                     <path d="m5 15-4-4 4-4"></path>
                                 </svg>
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <section class="troubleshooting">
+            <details class="advanced-toggle">
+                <summary class="advanced-summary">Troubleshooting</summary>
+                <div class="advanced-content">
+                    <div class="advanced-section">
+                        <h4 class="advanced-title">🔥 Firewall Issues (CentOS/RHEL/Fedora)</h4>
+                        <p class="troubleshooting-desc">If you can ping through the tunnel but TCP connections fail, add the WireGuard interface to the trusted zone:</p>
+                        <div class="command-block">
+                            <code class="command-text">sudo firewall-cmd --permanent --zone=trusted --add-interface=burrow</code>
+                            <button class="copy-button" data-copy="sudo firewall-cmd --permanent --zone=trusted --add-interface=burrow">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="m5 15-4-4 4-4"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="command-block">
+                            <code class="command-text">sudo firewall-cmd --reload</code>
+                            <button class="copy-button" data-copy="sudo firewall-cmd --reload">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="m5 15-4-4 4-4"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="advanced-section">
+                        <h4 class="advanced-title">🔍 Common Issues</h4>
+                        <div class="troubleshooting-item">
+                            <strong>App not accessible:</strong> Ensure your app binds to <code>0.0.0.0:PORT</code> not <code>127.0.0.1:PORT</code>
+                        </div>
+                        <div class="troubleshooting-item">
+                            <strong>Handshake fails:</strong> Generate a fresh config - old configs become invalid after server restarts
+                        </div>
+                        <div class="troubleshooting-item">
+                            <strong>Permission denied:</strong> WireGuard requires root/sudo privileges to create network interfaces
                         </div>
                     </div>
                 </div>

@@ -478,6 +478,46 @@ body {
     margin-bottom: var(--space-sm);
 }
 
+/* Troubleshooting Section */
+.troubleshooting {
+    padding: var(--space-xl) 0;
+    border-top: 1px solid var(--border-primary);
+}
+
+.troubleshooting-desc {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: var(--space-md);
+}
+
+.troubleshooting-item {
+    padding: var(--space-sm);
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    margin-bottom: var(--space-sm);
+    border-left: 3px solid var(--accent-purple);
+}
+
+.troubleshooting-item:last-child {
+    margin-bottom: 0;
+}
+
+.troubleshooting-item strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.troubleshooting-item code {
+    background: var(--bg-primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--accent-purple);
+    border: 1px solid var(--border-primary);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .nav-content {

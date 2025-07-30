@@ -8,13 +8,13 @@ Secure HTTP tunnels to localhost using WireGuard. Share your local development s
 
 ```bash
 # 1. Get tunnel config (replace 3000 with your local port)
-curl https://arbok.mrkaran.dev/3000 > wg.conf
+curl https://arbok.mrkaran.dev/3000 > burrow.conf
 
 # 2. Start tunnel
-sudo wg-quick up ./wg.conf
+sudo wg-quick up ./burrow.conf
 
 # 3. Stop tunnel when done
-sudo wg-quick down ./wg.conf
+sudo wg-quick down ./burrow.conf
 ```
 
 Your local service is now accessible at the HTTPS URL shown in the config file.
@@ -64,10 +64,10 @@ Test without DNS setup using Host headers:
 python3 -m http.server 3000 &
 
 # Create tunnel
-curl http://localhost:8080/3000 > wg.conf
-sudo wg-quick up ./wg.conf
+curl http://localhost:8080/3000 > burrow.conf
+sudo wg-quick up ./burrow.conf
 
-# Test with Host header (replace subdomain from wg.conf)
+# Test with Host header (replace subdomain from burrow.conf)
 curl -H "Host: your-subdomain.localhost" http://localhost:8080
 ```
 

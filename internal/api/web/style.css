@@ -182,45 +182,25 @@ body {
     overflow: hidden;
     font-family: var(--font-mono);
     margin-bottom: var(--space-xs);
+    width: 100%;
+    max-width: 1000px;
 }
 
 .command-text {
     display: block;
     padding: var(--space-md);
-    padding-right: 3rem; /* Add space for copy button */
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     line-height: 1.4;
     margin: 0;
     background: transparent;
     border: none;
-    word-break: break-all;
     white-space: pre-wrap;
+    word-break: break-all;
     user-select: all; /* Make text easily selectable */
     -webkit-user-select: all;
     -moz-user-select: all;
 }
 
-.copy-button {
-    position: absolute;
-    top: var(--space-xs);
-    right: var(--space-xs);
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: var(--bg-primary);
-    padding: var(--space-xs);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto; /* Ensure button is clickable */
-    z-index: 10; /* Ensure button is above text */
-}
-
-.copy-button:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
 
 .port-note {
     font-size: 0.95rem;
@@ -541,7 +521,7 @@ body {
     }
     
     .command-text {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         padding: var(--space-sm);
     }
     

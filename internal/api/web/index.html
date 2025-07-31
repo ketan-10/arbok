@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arbok - Secure HTTP Tunnels</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐍</text></svg>">
     <link rel="stylesheet" href="/static/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,13 +39,6 @@
                     <div class="command-label">Start tunnel:</div>
                     <div class="command-block">
                         <code class="command-text">curl https://arbok.mrkaran.dev/3000 > burrow.conf && sudo wg-quick up ./burrow.conf</code>
-                        <button class="copy-button" data-copy="curl https://arbok.mrkaran.dev/3000 > burrow.conf && sudo wg-quick up ./burrow.conf">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="m5 15-4-4 4-4"></path>
-                                <path d="M5 15H1a2 2 0 01-2-2V3a2 2 0 012-2h10a2 2 0 012 2v4"></path>
-                            </svg>
-                        </button>
                     </div>
                     <div class="port-note">
                         Replace <code>3000</code> with your local port.<br>
@@ -56,13 +50,6 @@
                     <div class="command-label">Stop tunnel:</div>
                     <div class="command-block">
                         <code class="command-text">sudo wg-quick down ./burrow.conf</code>
-                        <button class="copy-button" data-copy="sudo wg-quick down ./burrow.conf">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="m5 15-4-4 4-4"></path>
-                                <path d="M5 15H1a2 2 0 01-2-2V3a2 2 0 012 2v4"></path>
-                            </svg>
-                        </button>
                     </div>
                 </div>
 
@@ -133,12 +120,6 @@
                         <h4 class="advanced-title">API Access</h4>
                         <div class="command-block">
                             <code class="command-text">curl -X POST -H "X-API-Key: your-key" https://arbok.mrkaran.dev/api/tunnel/3000</code>
-                            <button class="copy-button" data-copy="curl -X POST -H \"X-API-Key: your-key\" https://arbok.mrkaran.dev/api/tunnel/3000">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="m5 15-4-4 4-4"></path>
-                                </svg>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -154,21 +135,9 @@
                         <p class="troubleshooting-desc">If you can ping through the tunnel but TCP connections fail, add the WireGuard interface to the trusted zone:</p>
                         <div class="command-block">
                             <code class="command-text">sudo firewall-cmd --permanent --zone=trusted --add-interface=burrow</code>
-                            <button class="copy-button" data-copy="sudo firewall-cmd --permanent --zone=trusted --add-interface=burrow">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="m5 15-4-4 4-4"></path>
-                                </svg>
-                            </button>
                         </div>
                         <div class="command-block">
                             <code class="command-text">sudo firewall-cmd --reload</code>
-                            <button class="copy-button" data-copy="sudo firewall-cmd --reload">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="m5 15-4-4 4-4"></path>
-                                </svg>
-                            </button>
                         </div>
                     </div>
                     

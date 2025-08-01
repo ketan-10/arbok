@@ -50,9 +50,9 @@ private_key = "your-wireguard-private-key"
 listen_addr = ":8080"
 ```
 
-3. **Run** (requires root for WireGuard):
+3. **Run**:
 ```bash
-sudo ./bin/server.bin --config config.toml
+./bin/server.bin --config config.toml
 ```
 
 ## Testing

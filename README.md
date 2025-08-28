@@ -1,5 +1,42 @@
 # Arbok
 
+### Note following flow shows how "Kernal-mode" tcp stack and "User-mode" wireguard works. 
+(but in arbok, fully tcp stack & wireguard are "user-mode")
+```md
+INCOMING (someone connecting to 10.100.0.2:3000):
+1. **Physical NIC:**        UDP packet arrives (encrypted WG)
+2. **Kernel -> Userspace:** wireguard-go reads UDP socket
+3. **Userspace:**           wireguard-go decrypts → gets IP packet
+4. **Userspace -> Kernel:** Writes decrypted packet to TUN (burrow)
+5. **Kernel:**              "Oh, 10.100.0.2 is local!" 
+6. **Kernel:**              TCP stack processes (port 3000 check)
+7. **Kernel -> Userspace:** To app (if listening) or RST
+```
+
+```md
+RESPONSE PATH:
+1. **Kernel:**           TCP RST packet created for (internal application)→10.100.0.1
+2. **Kernel→Userspace:** wireguard-go reads from TUN
+3. **Userspace:**        wireguard-go encrypts packet
+4. **Userspace→Kernel:** Sends as UDP to peer
+5. **Physical NIC:**     UDP packet goes out
+```
+
+- Incoming for Another Peer (10.100.0.1 → 10.100.0.3:3000)
+```md
+INCOMING (someone connecting to 10.100.0.3:3000):
+1. **Physical NIC:**     UDP packet arrives (encrypted WG from 10.100.0.1)
+2. **Kernel→Userspace:** wireguard-go reads UDP socket
+3. **Userspace:**        wireguard-go decrypts → gets IP packet for 10.100.0.3
+4. **Userspace→Kernel:** Writes decrypted packet to TUN (burrow)
+5. **Kernel:**           Checks routing table "10.100.0.3 via dev burrow"
+6. **Kernel→Userspace:** Packet goes BACK to wireguard-go through TUN!
+7. **Userspace:**        wireguard-go checks AllowedIPs for 10.100.0.3
+8. **Userspace:**        wireguard-go encrypts with 10.100.0.3's peer key
+9. **Userspace→Kernel:** Sends as UDP to 10.100.0.3's endpoint
+10. **Physical NIC:**    UDP packet goes out to different peer
+```
+
 Secure HTTP tunnels to localhost using WireGuard. Share your local development server instantly without signup or complex setup.
 
 **🌐 Try it now: [arbok.mrkaran.dev](https://arbok.mrkaran.dev)**
